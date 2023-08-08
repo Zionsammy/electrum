@@ -799,10 +799,13 @@ class LNWallet(LNWorker):
 
     def __init__(self, wallet: 'Abstract_Wallet', xprv):
         self.wallet = wallet
+        self.config = wallet.config
         self.db = wallet.db
         Logger.__init__(self)
-        LNWorker.__init__(self, xprv, LNWALLET_FEATURES)
-        self.config = wallet.config
+        features = LNWALLET_FEATURES
+        if self.config.ACCEPT_ZEROCONF_CHANNELS:
+            features |= LnFeatures.OPTION_ZEROCONF_OPT
+        LNWorker.__init__(self, xprv, features)
         self.lnwatcher = None
         self.lnrater: LNRater = None
         self.payment_info = self.db.get_dict('lightning_payments')     # RHASH -> amount, direction, is_paid
@@ -1221,6 +1224,7 @@ class LNWallet(LNWorker):
             self, peer, funding_sat, *,
             push_sat: int = 0,
             public: bool = False,
+            zeroconf: bool = False,
             password=None):
         coins = self.wallet.get_spendable_coins(None)
         node_id = peer.pubkey
@@ -1235,6 +1239,7 @@ class LNWallet(LNWorker):
             funding_sat=funding_sat,
             push_sat=push_sat,
             public=public,
+            zeroconf=zeroconf,
             password=password)
         return chan, funding_tx
 
@@ -1246,6 +1251,7 @@ class LNWallet(LNWorker):
             funding_sat: int,
             push_sat: int,
             public: bool,
+            zeroconf=False,
             password: Optional[str]) -> Tuple[Channel, PartialTransaction]:
 
         coro = peer.channel_establishment_flow(
@@ -1253,6 +1259,7 @@ class LNWallet(LNWorker):
             funding_sat=funding_sat,
             push_msat=push_sat * 1000,
             public=public,
+            zeroconf=zeroconf,
             temp_channel_id=os.urandom(32))
         chan, funding_tx = await util.wait_for2(coro, LN_P2P_NETWORK_TIMEOUT)
         util.trigger_callback('channels_updated', self.wallet)
@@ -2285,7 +2292,7 @@ class LNWallet(LNWorker):
         """Called when an HTLC we offered on chan gets irrevocably fulfilled or failed.
         If we find this was a forwarded HTLC, the upstream peer is notified.
         """
-        fw_info = chan.short_channel_id.hex(), htlc_id
+        fw_info = chan.get_scid_or_local_alias().hex(), htlc_id
         upstream_peer_pubkey = self.downstream_htlc_to_upstream_peer_map.get(fw_info)
         if not upstream_peer_pubkey:
             return False

@@ -638,7 +638,8 @@ class Channel(AbstractChannel):
     def __repr__(self):
         return "Channel(%s)"%self.get_id_for_log()
 
-    def __init__(self, state: 'StoredDict', *, name=None, lnworker=None, initial_feerate=None):
+    def __init__(self, state: 'StoredDict', *, name=None, lnworker=None, initial_feerate=None, opening_fee=None):
+        self.opening_fee = opening_fee
         self.name = name
         self.channel_id = bfh(state["channel_id"])
         self.short_channel_id = ShortChannelID.normalize(state["short_channel_id"])
@@ -1527,6 +1528,7 @@ class Channel(AbstractChannel):
                 self.hm.recv_update_fee(feerate)
 
     def make_commitment(self, subject: HTLCOwner, this_point: bytes, ctn: int) -> PartialTransaction:
+        assert this_point is not None
         assert type(subject) is HTLCOwner
         feerate = self.get_feerate(subject, ctn=ctn)
         other = subject.inverted()

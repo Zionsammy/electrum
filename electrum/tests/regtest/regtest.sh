@@ -98,6 +98,7 @@ if [[ $1 == "init" ]]; then
     if [[ $2 == "bob" ]]; then
         $bob setconfig --offline lightning_listen localhost:9735
         $bob setconfig --offline use_swapserver true
+        $bob setconfig --offline lightning_peerbackup_server true
     fi
     echo "funding $2"
     # note: changing the funding amount affects all tests, as they rely on "wait_for_balance"

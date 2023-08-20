@@ -943,6 +943,9 @@ class SimpleConfig(Logger):
     SWAPSERVER_PORT = ConfigVar('swapserver_port', default=5455, type_=int)
     TEST_SWAPSERVER_REFUND = ConfigVar('test_swapserver_refund', default=False, type_=bool)
 
+    # serve channel backups
+    LIGHTNING_PEERBACKUP_SERVER = ConfigVar('lightning_peerbackup_server', default=False, type_=bool)
+
     # connect to remote WT
     WATCHTOWER_CLIENT_ENABLED = ConfigVar('use_watchtower', default=False, type_=bool)
     WATCHTOWER_CLIENT_URL = ConfigVar('watchtower_url', default=None, type_=str)
